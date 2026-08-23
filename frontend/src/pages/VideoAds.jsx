@@ -152,7 +152,10 @@ export default function VideoAds() {
                 {/* Step 3: Profile Selection */}
                 {currentStep === 3 && (
                     <ProfileSelectionStep
-                        profiles={customerProfiles.filter(p => wizardData.brand?.profileIds?.includes(p.id))}
+                        // Customer profiles are available globally. A profile
+                        // does not need to be linked to the selected brand to
+                        // be used as the video ad's target audience.
+                        profiles={customerProfiles}
                         selectedProfile={wizardData.profile}
                         onSelect={(profile) => {
                             updateData('profile', profile);
