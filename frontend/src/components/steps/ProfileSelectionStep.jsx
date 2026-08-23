@@ -8,7 +8,7 @@ export default function ProfileSelectionStep({ profiles, selectedProfile, onSele
             <p className="text-gray-600 mb-6">Choose the customer profile to target</p>
             {profiles.length === 0 ? (
                 <div className="text-center py-12 text-gray-500">
-                    No customer profiles found for this brand. Please add profiles first.
+                    No customer profiles found. Please add a profile first.
                 </div>
             ) : (
                 <div className="space-y-3">

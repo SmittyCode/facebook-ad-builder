@@ -336,7 +336,7 @@ export default function ImageAds() {
                 {/* Step 3: Profile Selection */}
                 {currentStep === 3 && (
                     <ProfileSelectionStep
-                        profiles={customerProfiles.filter(p => wizardData.brand?.profileIds?.includes(p.id))}
+                        profiles={customerProfiles}
                         selectedProfile={wizardData.profile}
                         onSelect={(profile) => {
                             updateData('profile', profile);
