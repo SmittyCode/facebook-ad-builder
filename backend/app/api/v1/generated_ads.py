@@ -111,44 +111,37 @@ import os
 import asyncio
 import uuid
 import httpx
-from pathlib import Path
 from app.core.config import settings
+from app.api.v1.uploads import upload_to_r2
 
 try:
     import fal_client
 except ImportError:
     fal_client = None
 
-# Setup uploads directory
-UPLOAD_DIR = Path(__file__).parent.parent.parent.parent / "uploads"
-UPLOAD_DIR = UPLOAD_DIR.resolve()
-os.makedirs(UPLOAD_DIR, mode=0o755, exist_ok=True)
-
 async def download_and_save_image(image_url: str, prefix: str = "generated") -> str:
     """
-    Download image from external URL and save it locally.
-    Returns the local URL path.
+    Persist a generated image in durable storage when available.
+
+    Railway's container filesystem is disposable, so returning a local
+    /uploads URL for generated media causes saved ads to break after a
+    redeploy. Use R2 when fully configured; otherwise retain the provider URL
+    as a usable fallback instead of saving a path that will disappear.
     """
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(image_url, timeout=30.0)
-            response.raise_for_status()
+    filename = f"{prefix}_{uuid.uuid4()}.png"
 
-            # Generate unique filename
-            unique_id = str(uuid.uuid4())
-            filename = f"{prefix}_{unique_id}.png"
-            file_path = UPLOAD_DIR / filename
+    if settings.r2_enabled and settings.R2_BUCKET_NAME and settings.R2_PUBLIC_URL:
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(image_url, timeout=30.0)
+                response.raise_for_status()
 
-            # Save image
-            with open(file_path, "wb") as f:
-                f.write(response.content)
+            return await upload_to_r2(response.content, filename, "image/png")
+        except Exception as e:
+            print(f"Error persisting generated image to R2: {e}")
 
-            # Return local URL
-            return f"/uploads/{filename}"
-    except Exception as e:
-        print(f"Error downloading image: {e}")
-        # Return original URL as fallback
-        return image_url
+    print("Durable image storage is not configured; retaining the provider URL")
+    return image_url
 
 @router.post("/generate-image")
 async def generate_image(
